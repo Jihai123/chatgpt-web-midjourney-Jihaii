@@ -154,9 +154,13 @@ const modellist = computed(() => {
         else if (id.startsWith('-')) denied.add(id.slice(1));
         else custom.push(id);
     });
-    if (allRemoved) groups = [];
+    // 兼容已缓存的旧版前端：服务端可能下发 -all,model1,model2...
+    // 对于新版界面，把 -all 当作允许清单；保留最新模型中文分组而非退化为裸 ID。
+    const allowed = allRemoved ? new Set(custom) : null;
     groups = groups.map(g => ({
-        ...g, children: g.children.filter((m: any) => !denied.has(m.value))
+        ...g, children: g.children.filter((m: any) =>
+            !denied.has(m.value) && (!allowed || allowed.has(m.value))
+        )
     })).filter(g => g.children.length);
     if (gptConfigStore.myData.userModel) {
         custom.push(...gptConfigStore.myData.userModel.split(/[ ,]+/ig).filter(Boolean));
@@ -175,6 +179,9 @@ const modellist = computed(() => {
     });
     return groups;
 });
+const isHistoricalModel = computed(() =>
+    !curatedModelGroups.some(g => g.children.some(m => m.value === nGptStore.value?.model))
+);
 const ms= useMessage();
 // const save = ()=>{ 
 //     gptConfigStore.setMyData( nGptStore.value );
@@ -243,6 +250,7 @@ const serverSuccess=(s:any)=>{
     <div  class="!w-[70%] flex justify-end items-center " >
        <div> 
         <n-select v-model:value="nGptStore.model" :options="modellist" size="small" filterable placeholder="选择最新模型或费用档位" />
+        <div v-if="isHistoricalModel" class="text-[11px] text-amber-600 dark:text-amber-400">当前沿用历史模型；可在上方选择最新标准版或经济版。</div>
        </div>
        <div class=" pl-2" > 
         <!-- <NButton type="primary" @click="saveChat('no')" size="small" >{{ $t('mj.server_load') }}</NButton> -->
