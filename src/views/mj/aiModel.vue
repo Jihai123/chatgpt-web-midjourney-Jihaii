@@ -20,65 +20,160 @@ const nGptStore = ref(  chatSet.getGptConfig() );
 // 'claude-3-7-sonnet-20250219'
 // ,'claude-3-5-sonnet-20241022','claude-3-sonnet-20240229','claude-3-opus-20240229','claude-3-haiku-20240307','claude-3-5-sonnet-20240620','suno-v3'
 
-const config = ref({
-model:['gpt-5.5', 'gpt-5.4','gpt-5.1','gemini-3.1-pro-preview','gemini-3-pro-preview','grok-4','gpt-5','gpt-5.5-mini','gpt-5.4-nano','o1','o1-2024-12-17', 'gpt-4-turbo-2024-04-09','o1-preview','o1-mini','o1-preview-2024-09-12','o1-mini-2024-09-12','chatgpt-4o-latest','gpt-4o-2024-11-20','gpt-4o-2024-08-06','gpt-4o-2024-05-13','gpt-4o-mini-2024-07-18','gpt-4o-mini','gpt-4o','gpt-4-turbo','gpt-4-0125-preview','gpt-3.5-turbo',`gpt-4-1106-preview`,`gpt-3.5-turbo-16k`,'gpt-4','gpt-4-0613','gpt-4-32k-0613' ,'gpt-4-32k','gpt-4-32k-0314',`gpt-3.5-turbo-16k-0613`
-,`gpt-4-vision-preview`,`gpt-3.5-turbo-1106` ,'gpt-3.5-turbo-0125'
-,'gpt-3.5-turbo-0301','gpt-3.5-turbo-0613','gpt-4-all','gpt-3.5-net'
-,'gemini-3-flash-preview',"gemini-3.1-flash"
-,'claude-sonnet-4-6','claude-opus-4-7','claude-opus-4-6','claude-haiku-4-5'
-,'deepseek-r1','deepseek-v3','deepseek-v3.2','deepseek-v4-flash','deepseek-v4-pro'
-,'grok-4.2','grok-4.1' 
-,'gpt-4.5-preview-2025-02-27','gpt-4.5-preview'
-]
-,maxToken:16384
-}); 
+const curatedModelGroups = [
+  {
+    "type": "group",
+    "key": "curated-0",
+    "label": "热门主流 · Standard 优先",
+    "children": [
+      {
+        "label": "GPT 6.2 Sol｜标准·综合编程",
+        "value": "standard/gpt-6.2-sol"
+      },
+      {
+        "label": "Claude Sonnet 5.5｜标准·写作编程",
+        "value": "standard/claude-sonnet-5-5"
+      },
+      {
+        "label": "Gemini 4 Argon｜标准·综合",
+        "value": "standard/gemini-4-argon"
+      },
+      {
+        "label": "Grok 4.7｜标准·主流新款",
+        "value": "standard/grok-4.7"
+      },
+      {
+        "label": "DeepSeek V4 Pro｜中文推理",
+        "value": "deepseek-v4-pro"
+      },
+      {
+        "label": "Gemini 3.8 Flash｜标准·轻量",
+        "value": "standard/gemini-3.8-flash"
+      },
+      {
+        "label": "Qwen Max｜中文应用",
+        "value": "qwen-max"
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "key": "curated-1",
+    "label": "经济选择 · Basic / 低费用",
+    "children": [
+      {
+        "label": "GPT 6.2 Sol｜Basic 经济版",
+        "value": "basic/gpt-6.2-sol"
+      },
+      {
+        "label": "Claude Sonnet 5.5｜Basic 经济版",
+        "value": "basic/claude-sonnet-5-5"
+      },
+      {
+        "label": "Gemini 3.8 Flash｜Basic 经济版",
+        "value": "basic/gemini-3.8-flash"
+      },
+      {
+        "label": "DeepSeek V4.1 Flash｜经济中文",
+        "value": "deepseek-v4.1-flash-1017"
+      },
+      {
+        "label": "GPT-4o mini｜轻量低费用",
+        "value": "gpt-4o-mini"
+      },
+      {
+        "label": "GPT 6.1 Sol｜Basic 经济备用",
+        "value": "basic/gpt-6.1-sol"
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "key": "curated-2",
+    "label": "高阶旗舰 · 费用较高，按需选择",
+    "children": [
+      {
+        "label": "GPT 6.2 Astra｜Standard 高阶",
+        "value": "standard/gpt-6.2-astra"
+      },
+      {
+        "label": "Claude Opus 5.5｜Standard 高阶",
+        "value": "standard/claude-opus-5-5"
+      },
+      {
+        "label": "Gemini 4 Carbon｜Standard 高阶",
+        "value": "standard/gemini-4-carbon"
+      },
+      {
+        "label": "Claude Fable 5.2｜Standard 高阶",
+        "value": "standard/claude-fable-5-2"
+      },
+      {
+        "label": "GLM 5.3｜中文进阶",
+        "value": "glm-5.3"
+      },
+      {
+        "label": "Kimi K3.1 Pro｜长文进阶",
+        "value": "kimi-k3.1-pro"
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "key": "curated-3",
+    "label": "兼容备用",
+    "children": [
+      {
+        "label": "GPT 6.1 Sol｜Standard",
+        "value": "standard/gpt-6.1-sol"
+      },
+      {
+        "label": "Gemini 4 Hydrogen｜Standard",
+        "value": "standard/gemini-4-hydrogen"
+      }
+    ]
+  }
+];
+const config = ref({maxToken:16384});
 const st= ref({openMore:false,isShow:false ,server:'' });
 const voiceList= computed(()=>{
     let rz=[];
     for(let o of "alloy,echo,fable,onyx,nova,shimmer".split(/[ ,]+/ig))rz.push({label:o,value:o}) 
     return rz;
 });
-const modellist = computed(() => { //
-    let rz =[ ];
-    for(let o of config.value.model){
-        rz.push({label:o,value:o})
+const modellist = computed(() => {
+    // 保留用户自定义、服务端 CUSTOM_MODELS 和历史对话模型。
+    let groups: any[] = curatedModelGroups.map(g => ({
+        ...g, children: g.children.map(m => ({ ...m }))
+    }));
+    const custom: string[] = [];
+    const denied = new Set<string>();
+    let allRemoved = false;
+    (homeStore.myData.session.cmodels || '').split(/[ ,]+/ig).filter(Boolean).forEach((id: string) => {
+        if (id === '-all') allRemoved = true;
+        else if (id.startsWith('-')) denied.add(id.slice(1));
+        else custom.push(id);
+    });
+    if (allRemoved) groups = [];
+    groups = groups.map(g => ({
+        ...g, children: g.children.filter((m: any) => !denied.has(m.value))
+    })).filter(g => g.children.length);
+    if (gptConfigStore.myData.userModel) {
+        custom.push(...gptConfigStore.myData.userModel.split(/[ ,]+/ig).filter(Boolean));
     }
-    if(gptConfigStore.myData.userModel){
-        let arr = gptConfigStore.myData.userModel.split(/[ ,]+/ig);
-        //  let uniqueArray  = arr.filter((value, index, self) => {
-        //     return self.indexOf(value) === index;
-        // });
-        for(let o of arr ){
-            o && rz.push({label:o,value:o})
-        }
-    }
-    //服务端的 CUSTOM_MODELS 设置
-    if( homeStore.myData.session.cmodels ){
-        let delModel:string[] = [];
-        let addModel:string[]=[];
-        let isDelAll= false
-        homeStore.myData.session.cmodels.split(/[ ,]+/ig).map( (v:string)=>{
-            if(v.indexOf('-')==0){
-                delModel.push(v.substring(1))
-                if( v=='-all') isDelAll=true;
-            }else{
-                addModel.push(v);
-            }
-        });
-        mlog('cmodels',delModel,addModel);
-        if( isDelAll  )rz=[];
-        rz= rz.filter(v=> delModel.indexOf(v.value)==-1 );
-        addModel.map(o=>rz.push({label:o,value:o}) )
-        if (rz.length==0){
-            rz.push({label:'gpt-3.5-turbo',value:'gpt-3.5-turbo'}) 
-        }
-    }
-
-    let uniqueArray: { label: string, value: string }[] = Array.from(
-        new Map(rz.map(item => [JSON.stringify(item), item]))
-        .values()
-    );
-    return uniqueArray ;
+    if (nGptStore.value?.model) custom.push(nGptStore.value.model);
+    const seen = new Set(groups.flatMap(g => g.children.map((m: any) => m.value)));
+    const extras = custom.filter(id => {
+        if (!id || denied.has(id) || seen.has(id)) return false;
+        seen.add(id);
+        return true;
+    }).map(id => ({ label: id + '（自定义/历史，注意核对价格）', value: id }));
+    if (extras.length) groups.push({ type: 'group', key: 'custom', label: '自定义与历史模型', children: extras });
+    if (!groups.length) groups.push({
+        type: 'group', key: 'fallback', label: '备用模型',
+        children: [{ label: 'GPT-4o mini', value: 'gpt-4o-mini' }]
+    });
+    return groups;
 });
 const ms= useMessage();
 // const save = ()=>{ 
@@ -147,11 +242,13 @@ const serverSuccess=(s:any)=>{
     </div>
     <div  class="!w-[70%] flex justify-end items-center " >
        <div> 
-        <n-select v-model:value="nGptStore.model" :options="modellist" size="small"  filterable   />
+        <n-select v-model:value="nGptStore.model" :options="modellist" size="small" filterable placeholder="选择最新模型或费用档位" />
        </div>
        <div class=" pl-2" > 
         <!-- <NButton type="primary" @click="saveChat('no')" size="small" >{{ $t('mj.server_load') }}</NButton> -->
         <AiModelServer @success="serverSuccess"/>
+        <div class="text-[11px] text-gray-500 dark:text-gray-400">从接口加载更多模型</div>
+        <!-- 标准档优先；Basic 更省钱但偶有不稳定；无前缀模型请先核对费用。 -->
         <!-- <n-popselect
                 v-model:value="st.server"
                 :options="serverOptions"
