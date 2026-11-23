@@ -75,11 +75,15 @@ watch(() => gptServerStore.myData.OPENAI_API_KEY , (n)=>{
             </template>
           </n-input>
       </section>
+      <div class="mb-3 text-xs leading-5 text-gray-500 dark:text-gray-400">
+        使用指北猫 API 时，可填写 https://api.zhibeimao.com/v1 ，下方填写你的 API Key。
+        只需设置一次即可切换 GPT、Claude、Gemini 等模型；保留其他自定义接口的使用方式。
+      </div>
 
       <section class="mb-4 flex justify-between items-center"  >
           <n-input  @blur="blurClean" type="password"  :placeholder="$t('mj.setOpenKeyPlaceholder')" show-password-on="click" v-model:value="gptServerStore.myData.OPENAI_API_KEY" clearable>
             <template #prefix>
-              <span class="text-[var(--n-tab-text-color-active)]">OpenAI Api Key:</span>
+              <span class="text-[var(--n-tab-text-color-active)]">智享AI / OpenAI 兼容 Key:</span>
             </template>
           </n-input>
       </section>
