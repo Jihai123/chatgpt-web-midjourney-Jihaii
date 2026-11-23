@@ -26,52 +26,54 @@ interface modelGroup{
 
 const mGroup= ref<modelGroup[]>([])
 
+const isChatModel = (id: string) =>
+    !/(?:image|video|embedding|tts|whisper|ocr|moderation|suno|music|flux|banana|veo|sora)/i.test(id);
+const tierLabel = (id: string) =>
+    id.startsWith('basic/') ? ' · 经济' :
+    id.startsWith('standard/') ? ' · 标准' : ' · 核对价格';
+
 const loadModel=async ()=>{
+    st.value.isLoadData = 0;
+    mGroup.value.forEach(group => group.data = []);
     try {
-         const modelsData = await gptFetch('/v1/models');
-          mlog('asdsd>> ', modelsData )
-        modelsData.data.forEach((v:any) => {
-              mlog('vv>> ',v )
-              let is=false
-              for(let a of mGroup.value){
-                if(a.key.length==0 && !is){
-                    let model= v.id as string
-                    a.data.push({model})
-                    break;
-                }
-                for(let b of a.key){
-                    if(v.id && v.id.includes(b)){
-                        let model= v.id as string
-                        a.data.push({model})
-                        is=true
-                        break;
-                    }
-                }
-              }
-        });
-        st.value.isLoadData=1
+        const modelsData = await gptFetch('/v1/models');
+        if (!Array.isArray(modelsData?.data)) throw new Error('Model catalog unavailable');
+        for (const item of modelsData.data) {
+            const id = typeof item?.id === 'string' ? item.id : '';
+            if (!id || !isChatModel(id)) continue;
+            const baseId = id.replace(/^(basic|standard)\//, '');
+            const match = mGroup.value.find(group =>
+                group.key.length && group.key.some(key => baseId.toLowerCase().startsWith(key))
+            );
+            (match ?? mGroup.value[mGroup.value.length - 1]).data.push({ model: id });
+        }
+        mGroup.value.forEach(group => group.data.sort((a, b) => a.model.localeCompare(b.model)));
+        st.value.isLoadData = 1;
     } catch (error) {
-        st.value.isLoadData=-1
-        ms.error('Loading Models Error!')
-    } 
-}
+        st.value.isLoadData = -1;
+        ms.error('模型加载失败，请核对接口地址及 API Key');
+    }
+};
+const openModelList=()=>{
+    st.value.isShow = true;
+    if (st.value.isLoadData !== 1) loadModel();
+};
 
 const initGroup=()=>{
-    // {name:'OpenAi',key:['gpt-'],data:[]}
-    // ,{name:'OpenAi O',key:['o1-','o3-'],data:[]}
-    // ,{name:'Deepseek',key:['deepseek'],data:[]}
-    mGroup.value.push( {name:'Deepseek',key:['deepseek'],data:[],icon:"arcticons:deepseek"} )
-    mGroup.value.push({name:'OpenAi',key:['gpt-'],data:[],'icon':'ri:openai-fill'})
-    mGroup.value.push( {name:'OpenAi O',key:['o1','o3'],data:[],'icon':'ri:openai-fill'} )
-    mGroup.value.push( {name:'Claude',key:['claude','c-3'],data:[],icon:"ri:claude-fill"} )
-    mGroup.value.push( {name:'Gemini',key:['gemini'],data:[],icon:"cbi:gemini"} )
-    mGroup.value.push( {name:'Grok',key:['grok'],data:[],icon:"token:xai"} )
-    mGroup.value.push( {name:'Other',key:[],data:[],isClosed:true } )
-}
-
+    mGroup.value = [
+        { name:'GPT', key:['gpt-', 'codex/'], data:[], icon:'ri:openai-fill' },
+        { name:'Claude', key:['claude'], data:[], icon:'ri:claude-fill' },
+        { name:'Gemini', key:['gemini'], data:[], icon:'cbi:gemini' },
+        { name:'Grok', key:['grok'], data:[], icon:'token:xai' },
+        { name:'DeepSeek', key:['deepseek'], data:[], icon:'arcticons:deepseek' },
+        { name:'Qwen', key:['qwen'], data:[] },
+        { name:'Kimi', key:['kimi'], data:[] },
+        { name:'GLM', key:['glm'], data:[] },
+        { name:'其他', key:[], data:[], isClosed:true }
+    ];
+};
 onMounted(()=>{
  initGroup();
- loadModel()
 })
 
 const successClick=(md:any)=> {
@@ -103,14 +105,14 @@ const abc=()=>{
 }
 </script>
 <template>
-<div @click="st.isShow=true">
+<div @click="openModelList">
 <NTag  type="primary" round size="small" :bordered="false" class="!cursor-pointer">
             {{ $t('mj.server_load') }}  </NTag>
  
 </div>
 <NModal  v-model:show="st.isShow"  preset="card"  :title="$t('mj.model_select')" class="!max-w-[620px]" @close="st.isShow=false" >
-     <NEmpty v-if="st.isLoadData==0">Loading....</NEmpty>
-     <NEmpty v-else-if="st.isLoadData==-1">Loaded Fail ....</NEmpty>
+     <NEmpty v-if="st.isLoadData==0" description="正在读取模型列表..." />
+     <div v-else-if="st.isLoadData==-1" class="p-4 text-center"><NEmpty description="加载失败，请检查 API Key 和接口地址" /><NButton class="mt-3" size="small" @click="loadModel">重试加载</NButton></div>
      <div   class=" overflow-y-auto max-h-[400px]" v-else >
         <div>
             
@@ -139,7 +141,7 @@ const abc=()=>{
                 <div v-for="md in mg.data" >
                     <!-- <template v-if="st.search=='' || md.model.includes(st.search)"></template> -->
                    <NTag type="info" size="small" round>
-                     <span class="cursor-pointer" @click="successClick(md)" >{{ md.model }}</span>
+                     <span class="cursor-pointer" @click="successClick(md)" >{{ md.model }}<span class="opacity-60">{{ tierLabel(md.model) }}</span></span>
                    </NTag>
                    
                 </div>

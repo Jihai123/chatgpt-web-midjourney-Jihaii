@@ -59,7 +59,12 @@ export const KnowledgeCutOffDate: Record<string, string> = {
 const getUrl=(url:string)=>{
     if(url.indexOf('http')==0) return url;
     if(gptServerStore.myData.OPENAI_API_BASE_URL){
-        return `${ gptServerStore.myData.OPENAI_API_BASE_URL}${url}`;
+        const base = gptServerStore.myData.OPENAI_API_BASE_URL.replace(/\/+$/, '');
+        // 同时支持 https://api.zhibeimao.com 和 https://api.zhibeimao.com/v1
+        if (/\/v1$/i.test(base) && url.startsWith('/v1/')) {
+            return base + url.slice(3);
+        }
+        return base + url;
     }
     return `/openapi${url}`;
 }
@@ -409,7 +414,7 @@ return DEFAULT_SYSTEM_TEMPLATE;
 }
 
 export const isNewModel=(model:string)=>{
-    return model.startsWith('o1-')// ||   model.includes('gpt-5')
+    return model.startsWith('o1-') || /^(?:basic\/|standard\/)?gpt-(?:5|6)(?:[.-]|$)/.test(model);
 }
 export const isClaudeModel=(model:string)=>{
     return model.includes('claude')
